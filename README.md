@@ -1,6 +1,6 @@
 # API de Inventário de TI
 
-> **Status: pronto para revisão.** API completa com autenticação JWT, CRUD de equipamentos, licenças, relatórios, documentação OpenAPI/Swagger, Docker Compose e CI/CD.
+> **Status: completo.** API com autenticação JWT, CRUD de equipamentos, licenças, relatórios, documentação OpenAPI/Swagger, Docker Compose e CI/CD.
 
 API REST para controle de equipamentos, licenças e movimentações entre filiais. Desenvolvida com Node.js, TypeScript, Express, PostgreSQL, Prisma, Zod, JWT, Swagger UI e Docker.
 
