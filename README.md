@@ -1,69 +1,51 @@
 # API de Inventário de TI
 
-> **Status: em desenvolvimento.** O código entra aos poucos; abaixo está o planejamento do projeto.
+> **Status: em desenvolvimento.** Autenticação, inventário e movimentações disponíveis; licenças, relatórios e documentação OpenAPI ainda serão implementados.
 
-## O que é
+API REST para inventário fictício de equipamentos entre filiais. Desenvolvida com Node.js, TypeScript, Express, PostgreSQL, Prisma, Zod e JWT.
 
-API REST para controlar equipamentos (computadores e periféricos), licenças e movimentações entre filiais, com autenticação, papéis, documentação e testes.
+## Requisitos e instalação
 
-## O que prova
+Node.js 20 ou superior e PostgreSQL. Copie `.env.example` para `.env`, ajuste `DATABASE_URL` e defina `JWT_SECRET` aleatório com pelo menos 32 caracteres. Não use os exemplos como segredos reais.
 
-Back-end com Node.js: modelagem, validação, transações, testes de integração, documentação e integração contínua.
-
-## Stack
-
-Node.js, TypeScript, Express, PostgreSQL, Prisma, Zod, JWT, Vitest, Supertest, OpenAPI com Swagger UI, Docker Compose e GitHub Actions. Publicação em Render com banco Neon ou Supabase.
-
-## Estrutura
-
-```
-api-inventario-ti/
-├─ src/
-│  ├─ app.ts
-│  ├─ server.ts
-│  ├─ modules/
-│  │  ├─ auth/             # rotas, controller, service, schema
-│  │  ├─ equipamentos/
-│  │  ├─ filiais/
-│  │  ├─ movimentacoes/
-│  │  ├─ licencas/
-│  │  └─ relatorios/
-│  └─ middlewares/         # autenticacao.ts, papeis.ts, validar.ts, erros.ts
-├─ prisma/                 # schema.prisma, migrations, seed.ts
-├─ tests/
-├─ docker-compose.yml
-├─ Dockerfile
-├─ .github/workflows/ci.yml
-└─ README.md
+```sh
+npm ci --ignore-scripts
+npx prisma generate
+npx prisma migrate deploy
+SEED_PASSWORD='escolha-uma-senha-local-forte' npm run seed
+npm run dev
 ```
 
-## Rotas principais
+A carga cria duas filiais e três usuários fictícios: `admin@example.com`, `tecnico@example.com` e `leitura@example.com`. Todos recebem a senha fornecida por `SEED_PASSWORD` (mínimo 12 caracteres). A carga atualiza as senhas quando executada novamente. Não utilize a carga em produção.
 
-`POST /auth/login`; `GET`, `POST`, `PUT` e `DELETE` em `/equipamentos`, com filtros e paginação; `POST /equipamentos/:id/movimentar`; `GET /equipamentos/:id/historico`; `GET /licencas/vencendo?dias=30`; `GET /relatorios/por-filial`.
+## Uso
 
-## Plano
+Envie `POST /auth/login` com `{"email":"admin@example.com","senha":"..."}`. Nas demais rotas use `Authorization: Bearer <token>`. O token expira em uma hora. O limitador de login mantém contadores em memória: para múltiplas instâncias, use um armazenamento compartilhado antes de publicar.
 
-1. Projeto TypeScript com ESLint e scripts de execução.
-2. Esquema Prisma, migrações e carga inicial.
-3. Login com senha em hash, token JWT e papéis (administrador, técnico e leitura).
-4. CRUD de equipamentos com validação Zod, filtros e paginação.
-5. Movimentação em transação: muda a filial do equipamento e grava o histórico juntos.
-6. Licenças com alerta de vencimento e relatórios agregados.
-7. Erros padronizados (código, mensagem, detalhes) e registro de requisições.
-8. Testes de integração dos fluxos principais.
-9. Documentação OpenAPI em `/docs`.
-10. Docker Compose, pipeline de testes e publicação.
+- `GET /filiais`: lista filiais.
+- `GET /equipamentos`: filtros opcionais `nome` e `filialId`, paginação `pagina` e `limite` (máximo 100).
+- `GET /equipamentos/:id`, `POST /equipamentos`, `PUT /equipamentos/:id`, `DELETE /equipamentos/:id`.
+- `POST /equipamentos/:id/movimentar`: corpo `{"destinoId":"UUID"}`. Atualiza a filial e grava histórico na mesma transação.
+- `GET /equipamentos/:id/historico`: lista movimentações.
 
-## Como deve funcionar
+Criação recebe `nome`, `patrimonio` e `filialId`; atualização recebe `nome` e `patrimonio`. Para alterar filial, use a movimentação. Administrador e técnico podem criar, atualizar e movimentar; apenas administrador pode excluir. Leitura pode consultar. Equipamento com histórico não pode ser excluído.
 
-- Requisição sem token recebe 401; papel sem permissão recebe 403; dado inválido recebe 422 com o campo apontado.
-- Movimentar um equipamento atualiza a filial e cria o registro de histórico. Se uma parte falhar, nada é gravado.
-- `/docs` permite testar todas as rotas no navegador.
-- O pipeline roda os testes a cada push.
+Erros seguem `{"error":{"code":"...","message":"...","details":{}}}`; detalhes aparecem na validação. Token ausente ou inválido retorna 401, papel insuficiente 403 e entrada inválida 422. Patrimônio duplicado retorna 409.
 
-## Prazo
+## Verificação
 
-2 semanas.
+```sh
+npm test
+npm run build
+npm run lint
+npm audit
+```
+
+Os testes HTTP usam Vitest, Supertest e PGlite em memória, com a migração real. Isso não substitui testar a migração e a concorrência em um PostgreSQL real. Teste no computador com PostgreSQL: instalação, migração, carga, login, operações e movimentação, inclusive solicitações simultâneas. Não há dados reais no projeto.
+
+## Próximas etapas
+
+Licenças, relatórios, OpenAPI, Docker e CI pertencem a etapas futuras. Nenhuma publicação foi realizada.
 
 ## Autor
 
