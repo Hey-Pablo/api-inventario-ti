@@ -1,12 +1,26 @@
+# Dependencies
 node_modules/
+
+# Production
 dist/
-build/
-coverage/
 .env
-.env.*
-!.env.example
+
+# Logs
 *.log
-.DS_Store
-Thumbs.db
+npm-debug.log*
+
+# Environment
+.env.local
+.env.*.local
+
+# IDE
 .vscode/
 .idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+.data/
+*.db

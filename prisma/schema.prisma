@@ -22,6 +22,7 @@ model Filial {
   equipamentos Equipamento[]
   origens Movimentacao[] @relation("origem")
   destinos Movimentacao[] @relation("destino")
+  relatorios RelatorioFilial[]
 }
 model Equipamento {
   id String @id @default(uuid())
@@ -39,5 +40,40 @@ model Movimentacao {
   origem Filial @relation("origem", fields: [origemId], references: [id])
   destinoId String
   destino Filial @relation("destino", fields: [destinoId], references: [id])
+  criadoEm DateTime @default(now())
+}
+
+enum TipoLicenca {
+  ETIQUETA
+  CASE
+  KIT_DOCUMENTACAO
+  SOFTWARE
+}
+
+model Licenca {
+  id String @id @default(uuid())
+  nome String @unique
+  tipo TipoLicenca
+  fabricante String
+  quantidadeAtual Int @default(0)
+  quantidadeMaxima Int
+  vencimento DateTime?
+  localizacao String?
+  observacoes String?
+  criadoEm DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+}
+
+model RelatorioFilial {
+  id String @id @default(uuid())
+  filialId String
+  filial Filial @relation(fields: [filialId], references: [id])
+  equipamentosCount Int @default(0)
+  equipamentosValor Decimal @default(0)
+  licencasCount Int @default(0)
+  licencasValor Decimal @default(0)
+  movimentacoesLast7Days Int @default(0)
+  movimentacoesLast30Days Int @default(0)
+  resumo String @default("")
   criadoEm DateTime @default(now())
 }
