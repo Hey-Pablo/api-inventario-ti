@@ -1,54 +1,20 @@
-# Use Node.js 20 runtime
-FROM node:20-alpine AS base
-
-# Install gosu for non-root user
-RUN apk add --no-cache gosu
-
-# Install PM2 globally
-RUN npm install -g pm2
-
-# Development stage
-FROM base AS dev
+FROM node:20-alpine AS build
 WORKDIR /app
-
-# Install dependencies
+RUN apk add --no-cache openssl
 COPY package*.json ./
 RUN npm ci
-
-# Copy source code
-COPY . .
-
-# Expose port
-EXPOSE 3000
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1) })"
-
-# Start dev server (not production-ready)
-CMD ["npm", "run", "dev"]
-
-# Production stage
-FROM base AS production
-WORKDIR /app
-
-# Copy package files
-COPY package*.json ./
-RUN npm ci --production
-
-# Copy source code
-COPY . .
-
-# Create non-root user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 api
-RUN mkdir -p /app/node_modules && chown -R api:nodejs /app
-
-USER api
-
-# Copy migrations
 COPY prisma ./prisma
-CMD ["npx", "prisma", "migrate", "deploy"]
+RUN npx prisma generate
+COPY tsconfig*.json ./
+COPY src ./src
+RUN npm run build
 
-# Start application
-CMD ["pm2-runtime", "dist/server.js"]
+FROM node:20-alpine
+WORKDIR /app
+ENV NODE_ENV=production
+RUN apk add --no-cache openssl
+COPY --from=build /app ./
+EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+  CMD wget -q --spider http://localhost:3000/health || exit 1
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
