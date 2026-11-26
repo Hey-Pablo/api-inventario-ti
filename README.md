@@ -1,6 +1,6 @@
 # API de Inventário de TI
 
-> **Status: completo (imagem Docker ainda não testada).** API com autenticação JWT, CRUD de equipamentos, licenças, relatórios, documentação OpenAPI/Swagger, Docker Compose e CI/CD.
+> **Status: completo.** API com autenticação JWT, CRUD de equipamentos, licenças, relatórios, documentação OpenAPI/Swagger, Docker Compose e CI/CD. Imagem Docker pronta para teste.
 
 API REST para controle de equipamentos, licenças e movimentações entre filiais. Desenvolvida com Node.js, TypeScript, Express, PostgreSQL, Prisma, Zod, JWT, Swagger UI e Docker.
 
@@ -194,18 +194,36 @@ npm run test:coverage
 
 ### Testes manuais com Docker
 
-```sh
-# Subir containers
-docker-compose up -d
+**Comando exato para testar a imagem Docker no PC:**
 
-# Verificar saúde
+```sh
+# 1. Copiar .env.example e ajustar JWT_SECRET
+cp .env.example .env
+# Editar .env e colocar um JWT_SECRET de 32+ caracteres
+
+# 2. Subir os containers (constrói a imagem se necessário)
+docker-compose up --build -d
+
+# 3. Verificar se a API está saudável
 curl http://localhost:3000/health
 
-# Testar login
+# 4. Testar login (use a senha definida em SEED_PASSWORD no .env ou no docker-compose.yml)
 curl -X POST http://localhost:3000/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@example.com","senha":"<sua-senha>"}'
+  -d '{"email":"admin@example.com","senha":"sua-senha-ficticia-12345"}'
+
+# 5. Ver logs se precisar depurar
+docker-compose logs -f api
+
+# 6. Parar quando terminar
+docker-compose down
 ```
+
+**Notas:**
+- O `docker-compose.yml` já define `JWT_SECRET` e credenciais do PostgreSQL. Se quiser sobrescrever, use o `.env` local.
+- A API roda na porta 3000, PostgreSQL na 5432.
+- O seed cria usuários de teste: `admin@example.com`, `tecnico@example.com`, `leitura@example.com` (senha definida em `SEED_PASSWORD`).
+- Para testar endpoints autenticados, use o token JWT retornado no login no header `Authorization: Bearer <token>`.
 
 ### Testes no PostgreSQL real
 
