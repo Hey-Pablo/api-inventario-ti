@@ -1,6 +1,6 @@
 # API de Inventário de TI
 
-> **Status: em revisão.** API com autenticação JWT, CRUD de equipamentos, licenças, relatórios, documentação OpenAPI/Swagger, Docker Compose e CI/CD.
+> **Status: completo (imagem Docker ainda não testada).** API com autenticação JWT, CRUD de equipamentos, licenças, relatórios, documentação OpenAPI/Swagger, Docker Compose e CI/CD.
 
 API REST para controle de equipamentos, licenças e movimentações entre filiais. Desenvolvida com Node.js, TypeScript, Express, PostgreSQL, Prisma, Zod, JWT, Swagger UI e Docker.
 
@@ -179,38 +179,19 @@ O workflow em `.github/workflows/ci.yml` executa:
 
 ## Como testar localmente
 
-### Checklist para teste da imagem Docker (requer Docker instalado na VPS)
+### Testar a imagem Docker (no PC do Pablo, com Docker instalado)
 
-> **Comando exato para teste na VPS:** `docker-compose up -d && sleep 10 && curl -s http://localhost:3000/health | jq .`
+A imagem não roda na VPS de desenvolvimento (sem Docker). Os testes automatizados e o CI cobrem a API; este roteiro valida só a imagem e o Compose.
 
-1. [ ] **Verificar pré-requisitos**
-   - Docker 20.10+ instalado
-   - Portas 3000 e 5432 livres
-2. [ ] **Construir e iniciar containers**
-   - `docker-compose up --build -d`
-   - Aguardar até 60s para containers estarem "healthy"
-3. [ ] **Verificar saúde da API**
-   - `curl http://localhost:3000/health`
-   - Esperado: `{"status":"ok"}`
-4. [ ] **Verificar saúde do PostgreSQL**
-   - `curl http://localhost:5432` (porta padrão, sem autenticação)
-   - Ou consultar logs: `docker logs inventario-ti-api`
-5. [ ] **Testar login**
-   - `curl -X POST http://localhost:3000/auth/login \
-     -H "Content-Type: application/json" \
-     -d '{"email":"admin@example.com","senha":"sua-senha-ficticia-12345"}'`
-   - Esperado: JSON com `token` e `usuario`
-6. [ ] **Listar equipamentos**
-   - `curl -H "Authorization: Bearer <token>" http://localhost:3000/equipamentos`
-   - Esperado: Lista de equipamentos ou 401 se token inválido
-7. [ ] **Verificar migrações na imagem**
-   - A imagem deve rodar `npx prisma migrate deploy` automaticamente
-   - Seeds NÃO devem ser executados dentro do container ( antes `db seed` localmente)
-8. [ ] **Parar containers**
-   - `docker-compose down`
-   - Verificar que containers pararam: `docker ps`
+1. Suba tudo: `docker compose up --build -d`
+2. Espere os dois containers ficarem `healthy`: `docker compose ps`
+3. Confira a saúde da API: `curl http://localhost:3000/health` (esperado: `{"status":"ok"}`)
+4. Rode o seed dentro do container: `docker compose exec -e SEED_PASSWORD=troque-esta-senha api npm run seed` (se o `npm run seed` não existir na imagem, rode o seed no seu computador apontando para `localhost:5432`)
+5. Faça login: `curl -X POST http://localhost:3000/auth/login -H "Content-Type: application/json" -d '{"email":"admin@example.com","senha":"troque-esta-senha"}'` (esperado: JSON com `token`)
+6. Liste equipamentos: `curl -H "Authorization: Bearer <token>" http://localhost:3000/equipamentos` (esperado: lista, mesmo que vazia)
+7. Desligue: `docker compose down` (use `-v` para apagar também o banco)
 
-> **Observação:** As imagens Docker não são testadas na VPS por conta do Docker estar desinstalado. Use o comando acima para documentar como o Pablo deve testar quando for instalar Docker.
+Se algum passo falhar, anote o comando e a mensagem de erro e abra uma tarefa.
 
 ### Testes automatizados
 
