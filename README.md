@@ -179,6 +179,20 @@ O workflow em `.github/workflows/ci.yml` executa:
 
 ## Como testar localmente
 
+### Testar a imagem Docker (no PC do Pablo, com Docker instalado)
+
+A imagem não roda na VPS de desenvolvimento (sem Docker). Os testes automatizados e o CI cobrem a API; este roteiro valida só a imagem e o Compose.
+
+1. Suba tudo: `docker compose up --build -d`
+2. Espere os dois containers ficarem `healthy`: `docker compose ps`
+3. Confira a saúde da API: `curl http://localhost:3000/health` (esperado: `{"status":"ok"}`)
+4. Rode o seed dentro do container: `docker compose exec -e SEED_PASSWORD=troque-esta-senha api npm run seed` (se o `npm run seed` não existir na imagem, rode o seed no seu computador apontando para `localhost:5432`)
+5. Faça login: `curl -X POST http://localhost:3000/auth/login -H "Content-Type: application/json" -d '{"email":"admin@example.com","senha":"troque-esta-senha"}'` (esperado: JSON com `token`)
+6. Liste equipamentos: `curl -H "Authorization: Bearer <token>" http://localhost:3000/equipamentos` (esperado: lista, mesmo que vazia)
+7. Desligue: `docker compose down` (use `-v` para apagar também o banco)
+
+Se algum passo falhar, anote o comando e a mensagem de erro e abra uma tarefa.
+
 ### Testes automatizados
 
 ```sh
